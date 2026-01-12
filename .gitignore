@@ -11,11 +11,13 @@ output/as-top-lists/20250401_to_20250407/as_top_list_ranked.csv
 output/as-top-lists/20250401_to_20250407/as_top_list_presence.csv
 output/as-top-lists/20250407_to_20250413/as_top_list_ranked.csv
 output/as-top-lists/20250414_to_20250420/as_top_list_ranked.csv
+output/as-top-lists/20260101_to_20260107/as_top_list_ranked.csv
 output/prefix-top-lists/20250324_to_20250330/prefix_top_list_ranked.csv
 output/prefix-top-lists/20250401_to_20250407/prefix_top_list_ranked.csv
 output/prefix-top-lists/20250401_to_20250407/prefix_top_list_presence.csv
 output/prefix-top-lists/20250407_to_20250413/prefix_top_list_ranked.csv
 output/prefix-top-lists/20250414_to_20250420/prefix_top_list_ranked.csv
+output/prefix-top-lists/20260101_to_20260107/prefix_top_list_ranked.csv
 use_cases/bgp_hijacks/popular_prefixes_hijacks.csv
 use_cases/pqc_readiness/final.pqc.summary.formatted.ranking.csv
 use_cases/pqc_readiness/pqc_status_per_prefix.json
