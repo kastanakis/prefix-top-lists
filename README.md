@@ -6,20 +6,6 @@ This project maps **Domains → IPs → BGP Prefixes → ASes**, enabling **pref
 
 ---
 
-## **Table of Contents**
-- [Introduction](#📌-introduction)
-- [How It Works](#⚙️-how-it-works)
-- [Installation](#🚀-installation)
-- [Usage](#📌-usage)
-- [Methodology](#📊-methodology)
-- [Example Output](#📈-example-output)
-- [Temporal Analysis](#⏳-temporal-analysis)
-- [Use Cases](#🔍-use-cases)
-- [Contributing](#🤝-contributing)
-- [License](#📜-license)
-
----
-
 ## **Introduction**
 Domain popularity lists (e.g., Tranco, Umbrella, Majestic) provide valuable signals. However, these lists suffer from several limitations, such as a) frequent rank fluctuations over time, b) lack of aggregation across related domains (e.g., google.com vs google.co.uk), c) no inherent weighting to reflect relative importance.
 
@@ -196,16 +182,6 @@ Will analyze whether a domain's name servers are spread across prefixes, helping
 # Run parallel domain scanning
 bash use_cases/pqc_readiness/pqc_scan.sh
 ```
-
----
-
-## **Contributing**
-Contributions welcome!
-
-- Add support for new top lists or BGP sources
-- Automate week-to-week pipeline runs
-- Expand use cases (e.g., CDN analysis, IPv6 focus)
-
 ---
 
 ## **License**
