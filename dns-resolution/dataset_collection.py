@@ -10,6 +10,28 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from boto3.s3.transfer import TransferConfig
 import pyarrow.parquet as pq
 import gzip
+import argparse
+from datetime import date, datetime, timedelta
+
+def parse_end_date(end_date_str: str | None) -> date:
+    """
+    Parse end date in YYYY-MM-DD. If None, return yesterday's date (local).
+    """
+    if end_date_str is None:
+        return date.today() - timedelta(days=1)
+    try:
+        return datetime.strptime(end_date_str, "%Y-%m-%d").date()
+    except ValueError as e:
+        raise SystemExit(f"Invalid --end-date '{end_date_str}'. Use YYYY-MM-DD.") from e
+
+def compute_dates_to_process(end_date: date):
+    """
+    Return a list of python datetimes (like your current code expects),
+    covering 7 days ending on end_date (inclusive).
+    """
+    start_date = end_date - timedelta(days=6)
+    # Keep your existing type: pandas DatetimeIndex -> python datetime objects
+    return pd.date_range(start=start_date.isoformat(), end=end_date.isoformat()).to_pydatetime()
 
 def get_parquet_columns(file_path):
     """Extract specific columns from a Parquet file into a Pandas DataFrame and remove invalid rows."""
@@ -93,7 +115,7 @@ def get_all_available_dates(source):
                     year = int(parts[-4].split("=")[1])
                     month = int(parts[-3].split("=")[1])
                     day = int(parts[-2].split("=")[1])
-                    available_dates.append(datetime.date(year, month, day))
+                    available_dates.append(date(year, month, day))
                 except (IndexError, ValueError):
                     continue
 
@@ -150,8 +172,17 @@ def download_and_extract_columns(bucket, key, file_size, source, latest_date, ma
 
 # **Step 5: Find and Process the Latest Datasets**
 if __name__ == "__main__":
-    # DATES_TO_PROCESS = pd.date_range(start="2025-03-24", end="2025-04-20").to_pydatetime()
-    DATES_TO_PROCESS = pd.date_range(start="2026-01-01", end="2026-01-07").to_pydatetime()
+    parser = argparse.ArgumentParser(description="Download OpenINTEL datasets and extract selected columns.")
+    parser.add_argument(
+        "--end-date",
+        type=str,
+        default=None,
+        help="End date (inclusive) in YYYY-MM-DD. Default: today. Start date will be 6 days earlier."
+    )
+    args = parser.parse_args()
+
+    end_date = parse_end_date(args.end_date)
+    DATES_TO_PROCESS = compute_dates_to_process(end_date)
     all_datasets = {source: get_all_available_dates(source) for source in DO_SOURCES}
 
     print("Available date ranges for each source:")

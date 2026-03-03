@@ -5,6 +5,28 @@ from pprint import pprint
 import os
 from urllib.parse import urlparse
 import glob
+import argparse
+from datetime import date, datetime, timedelta
+
+def parse_end_date(end_date_str: str | None) -> date:
+    """
+    Parse end date in YYYY-MM-DD. If None, return yesterday's date (local).
+    """
+    if end_date_str is None:
+        return date.today() - timedelta(days=1)
+    try:
+        return datetime.strptime(end_date_str, "%Y-%m-%d").date()
+    except ValueError as e:
+        raise SystemExit(f"Invalid --end-date '{end_date_str}'. Use YYYY-MM-DD.") from e
+
+def compute_dates_to_process(end_date: date):
+    """
+    Return a list of python datetimes (like your current code expects),
+    covering 7 days ending on end_date (inclusive).
+    """
+    start_date = end_date - timedelta(days=6)
+    # Keep your existing type: pandas DatetimeIndex -> python datetime objects
+    return pd.date_range(start=start_date.isoformat(), end=end_date.isoformat()).to_pydatetime()
 
 # ---------- Helpers ----------
 def write_json(filename, content):
@@ -178,23 +200,41 @@ def run_pipeline(name, dns_files, weight_file, pfx_out, as_out, is_frequency=Fal
 
 # ---------- Main ----------
 if __name__ == "__main__":
-    # Adjust this to your actual path if needed
-    # date = "20250324_to_20250330"
-    # date = "20250401_to_20250407"
-    # date = "20250407_to_20250413"
-    # date = "20250414_to_20250420"
-    date = "20260101_to_20260107"
-    dns_data_dir = "../dns-resolution/openintel_data/" + date
+    parser = argparse.ArgumentParser(description="Run PTL/ATL pipeline for a weekly window.")
+    parser.add_argument(
+        "--end-date",
+        type=str,
+        default=None,
+        help="End date (inclusive) in YYYY-MM-DD. Default: today. Start date is 6 days earlier."
+    )
+    args = parser.parse_args()
 
-    # Load all available CSVs in the data folder
+    end_date = parse_end_date(args.end_date)
+    dates = compute_dates_to_process(end_date)
+
+    date = f"{dates[0].strftime('%Y%m%d')}_to_{dates[-1].strftime('%Y%m%d')}"
+    os.makedirs(f"../output/prefix-top-lists/{date}", exist_ok=True)
+    os.makedirs(f"../output/as-top-lists/{date}", exist_ok=True)
+    print(f"Processing week: {date}")
+
+    dns_data_dir = "../dns-resolution/openintel_data"
+
     all_dns_files = sorted(glob.glob(os.path.join(dns_data_dir, "*.csv")))
+
+    # Only keep files whose date falls inside this week
+    week_dates = {d.date().isoformat() for d in dates}
+
+    filtered_dns_files = [
+        f for f in all_dns_files
+        if any(date_str in f for date_str in week_dates)
+    ]
 
     # Use source names for curated/full separation if needed
     curated_sources = ["tranco", "umbrella", "majestic"]
-    # full_sources = curated_sources + ["radar", "crux"]
+    full_sources = curated_sources + ["radar", "crux"]
 
-    curated_dns_files = [f for f in all_dns_files if any(src in f for src in curated_sources)]
-    # full_dns_files = [f for f in all_dns_files if any(src in f for src in full_sources)]
+    curated_dns_files = [f for f in filtered_dns_files if any(src in f for src in curated_sources)]
+    full_dns_files = [f for f in filtered_dns_files if any(src in f for src in full_sources)]
 
     run_pipeline(
         name="Ranked (Zipf-based)",
@@ -205,11 +245,11 @@ if __name__ == "__main__":
         is_frequency=False
     )
 
-    # run_pipeline(
-    #     name="Presence-based (All Sources)",
-    #     dns_files=full_dns_files,
-    #     weight_file="../output/domain-top-lists/" + date + "/domain_top_list_merged_presence.csv",
-    #     pfx_out="../output/prefix-top-lists/" + date + "/prefix_top_list_presence.csv",
-    #     as_out="../output/as-top-lists/" + date + "/as_top_list_presence.csv",
-    #     is_frequency=True
-    # )
+    run_pipeline(
+        name="Presence-based (All Sources)",
+        dns_files=full_dns_files,
+        weight_file="../output/domain-top-lists/" + date + "/domain_top_list_merged_presence.csv",
+        pfx_out="../output/prefix-top-lists/" + date + "/prefix_top_list_presence.csv",
+        as_out="../output/as-top-lists/" + date + "/as_top_list_presence.csv",
+        is_frequency=True
+    )
