@@ -141,6 +141,7 @@ def distribute_weights(domain2pfx, ip2pfx, pfx2as, weight_csv_path, output_pfx_p
 
     for ip, weight in ip_weights.items():
         prefixes = ip2pfx.get(ip, [])
+        
         for pfx in prefixes:
             pfx_weights[pfx] = pfx_weights.get(pfx, 0) + weight
             pfx_ips.setdefault(pfx, set()).add(ip)
@@ -169,6 +170,11 @@ def distribute_weights(domain2pfx, ip2pfx, pfx2as, weight_csv_path, output_pfx_p
     as_weights, as_prefixes, as_domains, as_ips = {}, {}, {}, {}
     for pfx, weight in pfx_weights.items():
         for asn in pfx2as.get(pfx, []):
+            # Handle MOAS prefixes by splitting weights
+            asns = list(pfx2as.get(pfx, []))
+            if asns:
+                split_weight = weight / len(asns)
+                weight = split_weight
             as_weights[asn] = as_weights.get(asn, 0) + weight
             as_prefixes.setdefault(asn, set()).add(pfx)
             as_domains.setdefault(asn, set()).update(pfx_domains[pfx])
@@ -189,7 +195,8 @@ def distribute_weights(domain2pfx, ip2pfx, pfx2as, weight_csv_path, output_pfx_p
     print(f"✅ Saved AS Top List: {output_as_path}")
     pprint(df_as.head(5))
 
-    print(f"🎯 Total weight sum: {df_pfx['weight'].sum():.6f} (should be 1.0)")
+    print(f"🎯 Total prefix weight sum: {df_pfx['weight'].sum():.6f} (should be 1.0)")
+    print(f"🎯 Total AS weight sum: {df_as['weight'].sum():.6f} (should be 1.0)")
 
 # ---------- Master Pipeline ----------
 def run_pipeline(name, dns_files, weight_file, pfx_out, as_out, is_frequency=False):
